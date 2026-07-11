@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import NavBar from '@/components/NavBar'
+import { AuthProvider } from '@/lib/auth-context'
 
 export const metadata: Metadata = {
   title: '記憶大師 - 諧音記憶法學習工具',
@@ -15,10 +16,12 @@ export default function RootLayout({
   return (
     <html lang="zh-TW">
       <body className="min-h-screen">
-        <NavBar />
-        <main className="max-w-5xl mx-auto px-4 py-8">
-          {children}
-        </main>
+        <AuthProvider>
+          <NavBar />
+          <main className="max-w-5xl mx-auto px-4 py-8">
+            {children}
+          </main>
+        </AuthProvider>
       </body>
     </html>
   )
