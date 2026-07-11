@@ -16,6 +16,7 @@ interface JapaneseOutput {
     meaning?: string
     memoryAids?: Array<{ word: string; pun: string; image: string }>
   }>
+  story?: string
 }
 
 export default function MemoryCard({
@@ -28,9 +29,14 @@ export default function MemoryCard({
   return (
     <div className="card space-y-4">
       <div className="flex items-center justify-between">
-        <span className={memory.mode === 'bible' ? 'tag-bible' : 'tag-japanese'}>
-          {memory.mode === 'bible' ? '聖經' : '日文'}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className={memory.mode === 'bible' ? 'tag-bible' : 'tag-japanese'}>
+            {memory.mode === 'bible' ? '聖經' : '日文'}
+          </span>
+          {memory.is_public && (
+            <span className="text-xs text-emerald-400">公開</span>
+          )}
+        </div>
         {onDelete && (
           <button
             onClick={() => onDelete(memory.id)}
@@ -84,12 +90,8 @@ function renderJapaneseOutput(output: JapaneseOutput) {
       {output.segments.map((seg, i) => (
         <div key={i} className="segment-card">
           <div className="text-sky-300 font-bold text-lg mb-1">{seg.original}</div>
-          {seg.kana && (
-            <div className="text-slate-400 text-sm mb-1">{seg.kana}</div>
-          )}
-          {seg.romaji && (
-            <div className="text-slate-500 text-xs mb-2">{seg.romaji}</div>
-          )}
+          {seg.kana && <div className="text-slate-400 text-sm mb-1">{seg.kana}</div>}
+          {seg.romaji && <div className="text-slate-500 text-xs mb-2">{seg.romaji}</div>}
           {seg.meaning && (
             <div className="text-emerald-300 text-sm mb-2">意思：{seg.meaning}</div>
           )}
@@ -109,6 +111,12 @@ function renderJapaneseOutput(output: JapaneseOutput) {
           )}
         </div>
       ))}
+      {output.story && (
+        <div className="mt-3 p-3 bg-sky-950/40 rounded-lg border border-sky-900/50">
+          <div className="text-xs text-sky-400 mb-1">完整畫面故事</div>
+          <p className="text-slate-300 text-sm leading-relaxed">{output.story}</p>
+        </div>
+      )}
     </div>
   )
 }

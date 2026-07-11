@@ -1,13 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BIBLE_BOOKS, fetchBibleVerse } from '@/lib/bible'
 import { saveMemory, type MemoryAid } from '@/lib/storage'
+import { supabase } from '@/lib/supabase'
 import MemoryCard from '@/components/MemoryCard'
 import { useRouter } from 'next/navigation'
+import type { User } from '@supabase/supabase-js'
 
 export default function BiblePage() {
   const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
   const [mode, setMode] = useState<'paste' | 'select'>('paste')
   const [text, setText] = useState('')
   const [book, setBook] = useState('GEN')
@@ -16,6 +19,11 @@ export default function BiblePage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<MemoryAid | null>(null)
   const [error, setError] = useState('')
+  const [isPublic, setIsPublic] = useState(false)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null))
+  }, [])
 
   const handleGenerate = async () => {
     setError('')
@@ -48,11 +56,12 @@ export default function BiblePage() {
         mode: 'bible',
         input: inputText,
         output,
-        createdAt: Date.now(),
+        is_public: isPublic,
+        created_at: new Date().toISOString(),
       }
 
       setResult(memory)
-      saveMemory(memory)
+      await saveMemory(memory, user)
     } catch (e) {
       setError(e instanceof Error ? e.message : '發生錯誤')
     } finally {
@@ -114,48 +123,48 @@ export default function BiblePage() {
                 className="select-field"
               >
                 {BIBLE_BOOKS.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
+                  <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
               </select>
             </div>
             <div>
               <label className="block text-sm text-slate-400 mb-2">章</label>
               <input
-                type="number"
-                value={chapter}
+                type="number" value={chapter}
                 onChange={(e) => setChapter(e.target.value)}
-                min={1}
-                className="input-field"
+                min={1} className="input-field"
               />
             </div>
             <div>
-              <label className="block text-sm text-slate-400 mb-2">
-                節（選填，留空則讀取全章）
-              </label>
+              <label className="block text-sm text-slate-400 mb-2">節（選填）</label>
               <input
-                type="text"
-                value={verse}
+                type="text" value={verse}
                 onChange={(e) => setVerse(e.target.value)}
-                placeholder="例如 1-3 或 5"
-                className="input-field"
+                placeholder="1-3" className="input-field"
               />
             </div>
           </div>
         )}
+
+        <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
+            className="rounded border-slate-600 bg-slate-800"
+          />
+          公開此記憶（所有人都能看見）
+        </label>
 
         <button
           onClick={handleGenerate}
           disabled={loading || (mode === 'paste' && !text.trim())}
           className="btn-primary w-full"
         >
-          {loading ? 'AI 生成中...' : '🎯 生成記憶輔助'}
+          {loading ? 'AI 生成中（約 20-30 秒）...' : '🎯 生成記憶輔助'}
         </button>
 
-        {error && (
-          <p className="text-red-400 text-sm">{error}</p>
-        )}
+        {error && <p className="text-red-400 text-sm whitespace-pre-wrap">{error}</p>}
       </div>
 
       {result && (
@@ -166,7 +175,7 @@ export default function BiblePage() {
               onClick={() => router.push('/saved')}
               className="text-sm text-indigo-400 hover:text-indigo-300"
             >
-              已儲存，查看記憶庫 →
+              查看記憶庫 →
             </button>
           </div>
           <MemoryCard memory={result} />

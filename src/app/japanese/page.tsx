@@ -1,16 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { saveMemory, type MemoryAid } from '@/lib/storage'
+import { supabase } from '@/lib/supabase'
 import MemoryCard from '@/components/MemoryCard'
 import { useRouter } from 'next/navigation'
+import type { User } from '@supabase/supabase-js'
 
 export default function JapanesePage() {
   const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<MemoryAid | null>(null)
   const [error, setError] = useState('')
+  const [isPublic, setIsPublic] = useState(false)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null))
+  }, [])
 
   const handleGenerate = async () => {
     setError('')
@@ -39,11 +47,12 @@ export default function JapanesePage() {
         mode: 'japanese',
         input: text.trim(),
         output,
-        createdAt: Date.now(),
+        is_public: isPublic,
+        created_at: new Date().toISOString(),
       }
 
       setResult(memory)
-      saveMemory(memory)
+      await saveMemory(memory, user)
     } catch (e) {
       setError(e instanceof Error ? e.message : '發生錯誤')
     } finally {
@@ -62,29 +71,35 @@ export default function JapanesePage() {
 
       <div className="card space-y-4">
         <div>
-          <label className="block text-sm text-slate-400 mb-2">
-            日文輸入（支援單字或整段句子）
-          </label>
+          <label className="block text-sm text-slate-400 mb-2">日文輸入</label>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={`例如單字：shiro / 白 / しろ\n\n或整段句子：\n日本の皆様、\n私たちは、お正月の1月1日に大きな地震が能登半島で起きたというニュースを受け取りました。`}
+            placeholder={`單字：shiro / 白 / しろ\n\n整段：日本の皆様、私たちは...`}
             rows={6}
             className="input-field resize-none"
           />
         </div>
+
+        <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
+            className="rounded border-slate-600 bg-slate-800"
+          />
+          公開此記憶（所有人都能看見）
+        </label>
 
         <button
           onClick={handleGenerate}
           disabled={loading || !text.trim()}
           className="btn-primary w-full"
         >
-          {loading ? 'AI 分析中...' : '🎯 生成記憶輔助'}
+          {loading ? 'AI 分析中（約 20-30 秒）...' : '🎯 生成記憶輔助'}
         </button>
 
-        {error && (
-          <p className="text-red-400 text-sm">{error}</p>
-        )}
+        {error && <p className="text-red-400 text-sm whitespace-pre-wrap">{error}</p>}
       </div>
 
       {result && (
@@ -95,7 +110,7 @@ export default function JapanesePage() {
               onClick={() => router.push('/saved')}
               className="text-sm text-sky-400 hover:text-sky-300"
             >
-              已儲存，查看記憶庫 →
+              查看記憶庫 →
             </button>
           </div>
           <MemoryCard memory={result} />

@@ -38,7 +38,7 @@ const JAPANESE_SYSTEM_PROMPT = `你是一個記憶力大師，擅長使用「中
 {"type":"word","segments":[{"original":"日文","kana":"假名","romaji":"羅馬拼音","meaning":"中文意思","memoryAids":[{"word":"關鍵字","pun":"中文諧音","image":"具體畫面（15-30字）"}]}]}
 
 如果是整段：
-{"type":"text","segments":[{"original":"日文原句","kana":"假名讀音","romaji":"羅馬拼音","meaning":"中文翻譯","memoryAids":[{"word":"關鍵字","pun":"諧音","image":"畫面描述"}]}]}`
+{"type":"text","segments":[{"original":"日文原句","kana":"假名讀音","romaji":"羅馬拼音","meaning":"中文翻譯","memoryAids":[{"word":"關鍵字","pun":"諧音","image":"畫面描述"}]}],"story":"將所有畫面和諧音串聯成一段流暢的完整故事"}`
 
 function extractJson(raw: string): string {
   let text = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
